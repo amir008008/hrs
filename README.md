@@ -50,11 +50,7 @@ The HRSS is a comprehensive tool designed to facilitate the management of guest 
         ./gradlew :parcel-management:bootRun
         ```
 
-        Or using Maven:
 
-        ```bash
-        mvn --projects parcel-management spring-boot:run
-        ```
 
 ### Accessing Swagger UI
 
