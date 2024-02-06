@@ -112,8 +112,10 @@ public class Guest {
     public void setUpdatedDate(LocalDateTime updatedDate) {
         this.updatedDate = updatedDate;
     }
+
+    public enum GuestStatus {
+        CHECKED_IN, CHECKED_OUT
+    }
+
 }
 
-enum GuestStatus {
-    CHECKED_IN, CHECKED_OUT
-}

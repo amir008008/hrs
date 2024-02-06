@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Management - Guests</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .picked-up {
+            color: green; /* Green color for picked up */
+        }
+
+        .not-picked-up {
+            color: red; /* Red color for not picked up */
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-5">
+    <h2>Add New Guest</h2>
+    <form id="addGuestForm">
+        <input type="text" id="firstName" placeholder="First Name" required />
+        <input type="text" id="lastName" placeholder="Last Name" required />
+        <input type="text" id="roomNumber" placeholder="Room Number" required />
+        <!-- Additional fields as needed -->
+        <button type="submit" class="btn btn-primary">Check-In</button>
+    </form>
+</div>
+<!--
+<div class="container mt-5">
+    <h2>Update Guest Details</h2>
+    <form id="updateGuestForm" style="display:ye;">
+        <input type="hidden" id="updateGuestId" />
+        <input type="text" id="updateFirstName" placeholder="First Name" required />
+        <input type="text" id="updateLastName" placeholder="Last Name" required />
+        <input type="text" id="updateRoomNumber" placeholder="Room Number" required />
+        &lt;!&ndash; Additional fields as needed &ndash;&gt;
+        <button type="submit" class="btn btn-success">Update Details</button>
+    </form>
+</div>-->
+
+<div class="container mt-5">
+    <h2>Guest List</h2>
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">#ID</th>
+            <th scope="col">First Name</th>
+            <th scope="col">Last Name</th>
+            <th scope="col">Check-In Date</th>
+            <th scope="col">Check-Out Date</th>
+            <th scope="col">Room Number</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+        </tr>
+        </thead>
+        <tbody id="guestTableBody">
+        <!-- Guest entries will be populated here -->
+        </tbody>
+    </table>
+</div>
+<div class="container mt-5">
+    <h2>Parcel List</h2>
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col"># Parcel ID</th>
+            <th scope="col">Guest ID</th>
+            <th scope="col">Parcel Description</th>
+            <th scope="col">Picked Up</th>
+            <th scope="col">Actions</th>
+        </tr>
+        </thead>
+        <tbody id="parcelTableBody">
+        <!-- Parcel entries will be populated here -->
+        </tbody>
+    </table>
+</div>
+<div class="modal fade" id="addParcelModal" tabindex="-1" role="dialog" aria-labelledby="addParcelModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addParcelModalLabel">Add Parcel</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Add Parcel form with a hidden field for the guest ID -->
+                <form id="addParcelForm">
+                    <input type="hidden" id="guestIdForParcel" name="guestId" value="">
+                    <div class="form-group">
+                        <label for="parcelDescription">Parcel Description</label>
+                        <input type="text" class="form-control" id="parcelDescription" name="description" required>
+                    </div>
+                    <!-- Add other fields as necessary -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="addParcel()">Add Parcel</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="parcelReminderModal" tabindex="-1" role="dialog" aria-labelledby="parcelReminderModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="parcelReminderModalLabel">Parcel Reminder</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="parcelReminderModalBody">
+                <!-- Parcel descriptions and Picked Up status will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // Function to fetch parcels and populate the parcel table
+function fetchParcels() {
+    fetch('http://localhost:8082/parcels/all') // Update the endpoint to fetch parcels
+        .then(response => response.json())
+        .then(data => {
+            populateParcelTable(data);
+        })
+        .catch(error => console.error('Error fetching parcels:', error));
+}
+
+// Function to populate the parcel table
+// Function to populate the parcel table
+function populateParcelTable(parcels) {
+    const parcelTableBody = document.getElementById('parcelTableBody');
+    parcelTableBody.innerHTML = ''; // Clear existing entries
+
+    parcels.forEach(parcel => {
+        const row = parcelTableBody.insertRow();
+        row.insertCell(0).textContent = parcel.id;
+        row.insertCell(1).textContent = parcel.guestId;
+        row.insertCell(2).textContent = parcel.description;
+
+        // Create a cell for the parcel status
+        const statusCell = row.insertCell(3);
+
+        // Set the text content and color based on the parcel's status
+        if (parcel.pickedUp) {
+            statusCell.innerHTML = '<span style="color: green;">Picked Up</span>';
+        } else {
+            statusCell.innerHTML = '<span style="color: red;">Not Picked Up</span>';
+        }
+
+        const actionsCell = row.insertCell(4);
+
+        // Add a button for marking the parcel as picked up
+        const pickupButton = document.createElement('button');
+        pickupButton.textContent = 'Mark as Picked Up';
+        pickupButton.className = 'btn btn-primary btn-sm';
+        pickupButton.style.marginRight = '5px'; // Add margin to create space
+        pickupButton.onclick = function() { markParcelAsPickedUp(parcel.id); };
+        actionsCell.appendChild(pickupButton);
+
+        // Add a button for deleting the parcel
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.className = 'btn btn-danger btn-sm';
+        deleteButton.style.marginRight = '5px'; // Add margin to create space
+        deleteButton.onclick = function() { deleteParcel(parcel.id); };
+        actionsCell.appendChild(deleteButton);
+    });
+}
+
+
+
+// Function to mark a parcel as picked up
+function markParcelAsPickedUp(parcelId) {
+    fetch(`http://localhost:8082/parcels/pickup/${parcelId}`, {
+        method: 'POST',
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log(`Parcel with ID ${parcelId} marked as picked up successfully.`);
+            fetchParcels(); // Refresh the parcel list after marking as picked up
+        } else {
+            console.error(`Error marking parcel with ID ${parcelId} as picked up.`);
+        }
+    })
+    .catch(error => console.error('Error marking parcel as picked up:', error));
+}
+
+// Add an event listener to fetch parcels when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    fetchParcels();
+});
+
+</script>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+// Function to fetch guests and populate the table
+function fetchGuests() {
+    fetch('http://localhost:8081/guests/all') // Updated endpoint
+        .then(response => response.json())
+        .then(data => {
+            populateTable(data);
+            setupEventListeners(); // Call setupEventListeners after fetching guests
+        })
+        .catch(error => console.error('Error fetching guests:', error));
+}
+
+// Function to delete a guest by ID
+function deleteGuest(id) {
+    fetch(`http://localhost:8081/guests/delete/${id}`, {
+        method: 'DELETE', // Use DELETE method to delete the guest
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log(`Guest with ID ${id} deleted successfully.`);
+            fetchGuests(); // Refresh the guest list after deletion
+        } else {
+            console.error(`Error deleting guest with ID ${id}.`);
+        }
+    })
+    .catch(error => console.error('Error deleting guest:', error));
+}
+
+let selectedGuestId = null;
+
+// Function to check out a guest by ID
+// Function to check out a guest by ID
+function checkoutGuest(id) {
+    // Check if there are any pending parcels for this guest
+    fetch(`http://localhost:8082/parcels/guest/${id}`)
+        .then(response => response.json())
+        .then(parcels => {
+            const allPickedUp = parcels.every(parcel => parcel.pickedUp);
+
+            if (!allPickedUp) {
+                // Display a modal with parcel descriptions and Picked Up status
+                const modalBody = document.getElementById('parcelReminderModalBody');
+                modalBody.innerHTML = '';
+
+                parcels.forEach(parcel => {
+                    const description = parcel.description;
+                    const pickedUp = parcel.pickedUp;
+                    const statusColorClass = pickedUp ? 'text-success' : 'text-danger'; // Green for picked up, red for not picked up
+                    const descriptionElement = document.createElement('p');
+                    descriptionElement.innerHTML = `<span class="${statusColorClass}">${pickedUp ? 'Picked Up' : 'Not Picked Up'}</span> - ${description}`;
+                    modalBody.appendChild(descriptionElement);
+                });
+
+                // Open the "Parcel Reminder" modal
+                selectedGuestId = id; // Set the selected guest ID here
+                $('#parcelReminderModal').modal('show');
+            } else {
+                // All parcels are picked up, proceed with guest checkout
+                completeGuestCheckout(id);
+            }
+        })
+        .catch(error => console.error('Error fetching parcels:', error));
+}
+
+
+
+// Function to complete guest checkout after confirmation
+function completeGuestCheckout(id) {
+    // Check if there are any pending parcels for this guest
+    fetch(`http://localhost:8082/parcels/guest/${id}`)
+        .then(response => response.json())
+        .then(parcels => {
+            const allPickedUp = parcels.every(parcel => parcel.pickedUp);
+
+            if (allPickedUp) {
+                // All parcels are picked up, proceed with guest checkout
+                completeCheckout(id);
+            } else {
+                console.log('Guest has pending parcels. Cannot check out.');
+                // Show a warning to the user that there are pending parcels
+                // You can display this warning as an alert or modal
+            }
+
+            // Log the response from the server
+            console.log('Response from server:', parcels);
+        })
+        .catch(error => console.error('Error fetching parcels:', error));
+}
+
+
+
+    // Function to complete guest checkout after confirmation
+    function completeCheckout(id) {
+        fetch(`http://localhost:8081/guests/checkout/${id}`, {
+            method: 'POST', // Use POST method to check out the guest
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log(`Guest with ID ${id} checked out successfully.`);
+                fetchGuests(); // Refresh the guest list after checkout
+                // Close the "Parcel Reminder" modal
+                $('#parcelReminderModal').modal('hide');
+            } else {
+                console.error(`Error checking out guest with ID ${id}.`);
+            }
+        })
+        .catch(error => console.error('Error checking out guest:', error));
+    }
+
+
+
+// Function to populate the guest table
+function populateTable(guests) {
+    const tableBody = document.getElementById('guestTableBody');
+    tableBody.innerHTML = ''; // Clear existing entries
+
+    guests.forEach(guest => {
+        const row = tableBody.insertRow();
+        row.insertCell(0).textContent = guest.id;
+        row.insertCell(1).textContent = guest.firstName;
+        row.insertCell(2).textContent = guest.lastName;
+        row.insertCell(3).textContent = guest.checkInDate ? new Date(guest.checkInDate).toLocaleDateString() : '-';
+        row.insertCell(4).textContent = guest.checkOutDate ? new Date(guest.checkOutDate).toLocaleDateString() : '-';
+        row.insertCell(5).textContent = guest.roomNumber;
+
+        <!-- Status cell with color coding -->
+        const statusCell = row.insertCell(6);
+        const statusText = guest.status === "CHECKED_OUT" ? "Checked Out" : "Checked In";
+        statusCell.innerHTML = `<span class="${guest.status === "CHECKED_OUT" ? 'text-danger' : 'text-success'}">${statusText}</span>`;
+
+        // Actions cell
+        const actionsCell = row.insertCell(7);
+
+            // Add a div with a class to contain buttons for actions
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'action-buttons'; // Apply CSS to this class
+            actionsCell.appendChild(actionsDiv);
+
+            // Add a button for deleting a guest
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.className = 'btn btn-danger btn-sm';
+            deleteButton.style.marginRight = '5px'; // Add margin to create space
+            deleteButton.onclick = function() { deleteGuest(guest.id); };
+            actionsDiv.appendChild(deleteButton);
+
+            // Add a button for checking out a guest
+            const checkoutButton = document.createElement('button');
+            checkoutButton.textContent = 'Check Out';
+            checkoutButton.className = 'btn btn-primary btn-sm';
+            checkoutButton.style.marginRight = '5px'; // Add margin to create space
+            checkoutButton.onclick = function() { checkoutGuest(guest.id); };
+            actionsDiv.appendChild(checkoutButton);
+
+
+
+// Add a button for opening the "Add Parcel" modal
+const addParcelButton = document.createElement('button');
+addParcelButton.textContent = 'Add Parcel';
+addParcelButton.className = 'btn btn-success btn-sm';
+addParcelButton.style.marginRight = '5px'; // Add margin to create space
+
+// Add a click event handler to open the modal and populate the guest ID
+addParcelButton.onclick = function() {
+    // Get the guest ID from the table row
+    const guestId = guest.id; // Assuming 'guest' is the guest object from the current row
+
+    // Populate the guest ID field in the "Add Parcel" modal
+    document.getElementById('guestIdForParcel').value = guestId;
+
+    // Open the "Add Parcel" modal
+    $('#addParcelModal').modal('show');
+};
+
+actionsDiv.appendChild(addParcelButton);
+
+
+function populateGuestDetailsInModal(guest) {
+    // Populate guest details in the modal fields
+    document.getElementById('guestIdForParcel').value = guest.id;
+    document.getElementById('guestFirstName').textContent = guest.firstName;
+    document.getElementById('guestLastName').textContent = guest.lastName;
+    document.getElementById('guestRoomNumber').textContent = guest.roomNumber;
+    // Add other fields as necessary
+}
+
+// Function to add a parcel for a guest
+
+
+
+
+
+
+    });
+}
+
+
+// Function to set up event listeners for add and update forms
+function setupEventListeners() {
+    document.getElementById('addGuestForm').addEventListener('submit', addGuest);
+    document.getElementById('updateGuestForm').addEventListener('submit', updateGuestDetails);
+}
+
+    // Function to add a new guest
+    function addGuest(event) {
+        event.preventDefault();
+        const guestData = {
+            firstName: document.getElementById('firstName').value,
+            lastName: document.getElementById('lastName').value,
+            roomNumber: document.getElementById('roomNumber').value,
+            // Add other fields as necessary
+        };
+
+        fetch('http://localhost:8081/guests/checkin', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(guestData),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Guest checked in:', data);
+            fetchGuests(); // Refresh the guest list
+        })
+        .catch(error => console.error('Error checking in guest:', error));
+    }
+
+    // Function to update guest details
+    function updateGuestDetails(event) {
+        event.preventDefault();
+        const guestId = document.getElementById('updateGuestId').value;
+        const updatedData = {
+            firstName: document.getElementById('updateFirstName').value,
+            lastName: document.getElementById('updateLastName').value,
+            roomNumber: document.getElementById('updateRoomNumber').value,
+            // Add other fields as necessary
+        };
+
+        fetch(`http://localhost:8081/guests/update/${guestId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updatedData),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Guest details updated:', data);
+            fetchGuests(); // Refresh the guest list
+        })
+        .catch(error => console.error('Error updating guest:', error));
+    }
+
+document.addEventListener('DOMContentLoaded', function() {
+    fetchGuests();
+});
+</script>
+<script>
+function addParcel() {
+    const guestId = document.getElementById('guestIdForParcel').value;
+    const parcelDescription = document.getElementById('parcelDescription').value;
+
+    const parcelData = {
+        guestId: guestId,
+        description: parcelDescription,
+        // Add other parcel data as necessary
+    };
+
+    fetch(`http://localhost:8082/parcels/add/${guestId}`, { // Use backticks (`) for string interpolation
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(parcelData),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Parcel added successfully:', data);
+        // Close the "Add Parcel" modal
+        $('#addParcelModal').modal('hide');
+        // Refresh the parcel list
+        fetchParcels();
+    })
+    .catch(error => console.error('Error adding parcel:', error));
+}
+
+</script>
+<script>
+    function deleteParcel(parcelId) {
+    const confirmation = confirm('Are you sure you want to delete this parcel?');
+
+    if (confirmation) {
+        fetch(`http://localhost:8082/parcels/delete/${parcelId}`, {
+            method: 'DELETE',
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log(`Parcel with ID ${parcelId} deleted successfully.`);
+                fetchParcels(); // Refresh the parcel list after deletion
+            } else {
+                console.error(`Error deleting parcel with ID ${parcelId}.`);
+            }
+        })
+        .catch(error => console.error('Error deleting parcel:', error));
+    }
+}
+
+</script>
+
+</body>
+</html>
