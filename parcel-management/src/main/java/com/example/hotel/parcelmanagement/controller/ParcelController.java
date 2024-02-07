@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -43,16 +44,20 @@ public class ParcelController {
     }
 
     @GetMapping("/guest/{guestId}")
-    public ResponseEntity<List<Parcel>> findParcelsForGuest(@PathVariable Long guestId) {
+    public ResponseEntity<?> findParcelsForGuest(@PathVariable Long guestId) {
         logger.info("Received request to find parcels for guest with ID: {}", guestId);
         List<Parcel> parcels = parcelService.findParcelsForGuest(guestId);
         if (parcels.isEmpty()) {
             logger.info("No parcels found for guest with ID: {}", guestId);
-            return ResponseEntity.notFound().build();
+            // Return a custom response or an empty list instead of notFound()
+            return ResponseEntity.ok().body(Collections.emptyList());
+            // Or, if you prefer a custom message:
+            // return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "No parcels found"));
         }
         logger.info("Found {} parcels for guest with ID: {}", parcels.size(), guestId);
         return ResponseEntity.ok(parcels);
     }
+
 
     @PostMapping("/pickup/{parcelId}")
     public ResponseEntity<?> markParcelAsPickedUp(@PathVariable Long parcelId) {
